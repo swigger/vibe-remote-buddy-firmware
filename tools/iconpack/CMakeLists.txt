@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.16)
+project(vibeled_iconpack LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core Gui)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui)
+add_executable(vibeled_iconpack main.cpp)
+target_link_libraries(vibeled_iconpack PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui)

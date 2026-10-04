@@ -4,6 +4,18 @@ ESP32-S3 接收器固件：板子负责蓝牙连接、遥控器按键与语音�
 
 本仓库只发布可构建的固件源码，不提供预编译固件。构建结果留在你自己的电脑上。
 
+## USB 状态灯（vibeled）
+
+`0.13.0` 合并原 `logled` 的五级灯效、双色闪烁、定时恢复和持久化快捷灯效。新的 C++ / Qt 工具 **vibeled** 支持 Windows/macOS，灯光使用接收器现有的 **USB CDC** 管理通道；原命令行参数和 Agent Python 的 `--agent NAME EVENT` 语法保留。无参数启动图形界面，带参数执行命令。构建、兼容性及 Hook 配置见 [vibeled 使用说明](docs/vibeled.md)。
+
+```powershell
+.\package-vibeled.cmd
+./dist/vibeled/vibeled.exe set green --level 3
+python tools/agent_hook.py --agent codex Stop
+```
+
+Windows 双击根目录 `package-vibeled.cmd` 生成包含全部运行依赖的 `dist/vibeled-<版本>-windows-x64.zip`，完整解压后运行 `vibeled.exe`。macOS 双击 `package-vibeled.command` 生成 DMG，打开后将应用拖到 Applications。`build/` 中的 EXE 缺少部署依赖，请运行 `dist/` 下的版本。
+
 ## 用遥控器设置语音快捷键
 
 接收器插好、遥控器连接后，在**同一只遥控器**上依次按下并松开 **Power、Power、方向键**。从第一次按下 Power 到按下方向键，三次按键必须在 **2 秒内**完成。不需要打开 Buddy App。

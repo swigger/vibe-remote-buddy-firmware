@@ -44,6 +44,7 @@ enum {
   BUDDY_PROBE_RAW_WRITE, /* diagnostic build only */
   BUDDY_PROBE_MTU, /* diagnostic build only */
   BUDDY_PROBE_ADOPT = 0x450,
+  BUDDY_LED = 0x470, /* {"command":"<legacy light text>"} -> {"text":"<reply>"} */
   BUDDY_ACTION = 0x480,
   BUDDY_CHANGED,
   BUDDY_OPERATION_EVENT,

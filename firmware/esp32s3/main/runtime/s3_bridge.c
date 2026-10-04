@@ -3,6 +3,7 @@
 /* All BLE, persistence, adapter and management work runs on NimBLE's queue.
  * USB accesses only copied buffers/snapshots in s3_runtime, never a slot. */
 #include "buddy_management.h"
+#include "buddy_led.h"
 #include "buddy_probe.h"
 #include "buddy_power.h"
 #include "buddy_shortcut_store.h"
@@ -833,6 +834,7 @@ static void host_task(void *arg) {
 }
 void s3_bridge_start(void) {
   ESP_ERROR_CHECK(nvs_flash_init());
+  buddy_led_init();
   ESP_ERROR_CHECK(nvs_open("remote-s3", NVS_READWRITE, &storage));
   buddy_shortcuts_t shortcuts;
   fault(255, 45, buddy_shortcut_store_load(&shortcut_store, storage, &shortcuts));
@@ -949,6 +951,9 @@ static void binding_json(cJSON *j, unsigned key, buddy_binding_t b) {
 }
 #include "buddy_models_runtime.inc"
 uint16_t buddy_command(uint16_t op, const cJSON *q, cJSON *j) {
+  if (op == BUDDY_LED)
+    return buddy_led_command(q, j, !standalone_busy() && !buddy_update_busy() &&
+                             !buddy_catalog_store_busy() && !snapshot_transfer.token);
   if(op>=0x466&&op<=0x46a)return snapshot_command(op,q,j);
   if(snapshot_transfer.token&&op!=BUDDY_INFO&&op!=BUDDY_SLOT&&op!=BUDDY_STATS&&op!=BUDDY_MAP_GET)return RBP_STATUS_BUSY;
 #ifdef S3_HCI_PROBE
@@ -1113,6 +1118,7 @@ uint16_t buddy_command(uint16_t op, const cJSON *q, cJSON *j) {
   if (op == BUDDY_INFO) {
     buddy_update_info(j);
     cJSON_AddNumberToObject(j,"catalog_api",2);
+    cJSON_AddNumberToObject(j,"led_api",1);
     cJSON_AddNumberToObject(j, "probe_api", 1);
     cJSON_AddNumberToObject(j, "lifecycle_api", 2);
     cJSON_AddNumberToObject(j, "probe_voice_api", 4);

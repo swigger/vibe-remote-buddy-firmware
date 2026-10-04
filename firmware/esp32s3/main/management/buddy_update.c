@@ -67,7 +67,10 @@ void buddy_update_tick(uint32_t now,bool managed,bool ble_ready,bool quiet) {
   if(now>5000&&storage_ready&&ble_ready&&s3_usb_configured()) {
    esp_err_t rc=esp_ota_mark_app_valid_cancel_rollback();if(rc==ESP_OK){confirmed=true;pending=false;}else fail(rc);
   }
-  if(now>20000&&!confirmed){esp_ota_mark_app_invalid_rollback_and_reboot();esp_restart();}
+  /* Windows can take tens of seconds to re-enumerate the composite CDC/HID/UAC
+   * device after restart. Keep the same health checks, but allow enumeration
+   * to finish before declaring an otherwise healthy update unbootable. */
+  if(now>120000&&!confirmed){esp_ota_mark_app_invalid_rollback_and_reboot();esp_restart();}
  }
  if(state==RESTARTING){if((int32_t)(now-restart_at)>=0)esp_restart();return;}
  /* The pump samples time before parsing commands. A command may stamp last

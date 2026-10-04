@@ -78,7 +78,7 @@ bool buddy_management_audio(cJSON *body) {
 }
 static void incoming(rbp_rx_event_ctx_t *e, void *user) {
   uint32_t now = *(uint32_t *)user;
-  if (e->event != RBP_RX_FRAME)
+  if (e->event != RBP_RX_FRAME || !e->crc_ok || e->header.payload_size != e->payload_len)
     return;
   const rbp_header_t *q = &e->header;
   if (q->major != RBP_MAJOR || q->minor != RBP_MINOR || q->status ||
