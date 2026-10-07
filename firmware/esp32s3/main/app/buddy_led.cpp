@@ -13,7 +13,11 @@
 namespace {
 SemaphoreHandle_t mutex;
 TaskHandle_t worker;
-rmt_channel_handle_t channel;
+// The two boards use the same MCU/memory profile, with no board ID to read.
+// Mirror each color to their dedicated onboard LED pins instead of guessing
+// the board from its MAC or Flash size. Reserve both pins on either board.
+constexpr gpio_num_t rgb_pins[] = {GPIO_NUM_21, GPIO_NUM_48};
+rmt_channel_handle_t channels[2];
 rmt_encoder_handle_t encoder;
 nvs_handle_t storage;
 esp_err_t init_error = ESP_ERR_INVALID_STATE;
@@ -27,26 +31,35 @@ bool save(const char *text) {
          nvs_commit(storage) == ESP_OK;
 }
 void output(uint32_t rgb) {
-  // Preserve the actual board's RGB byte order from logled, GPIO 21.
   // A complete 24-bit frame plus reset fits in one hardware block: no refill
-  // ISR.
+  // ISR. Zero uses RGB on GPIO21; SuperMini uses GRB on GPIO48.
   rmt_symbol_word_t symbols[25]{};
-  for (unsigned i = 0; i < 24; ++i) {
-    const bool one = (rgb & (1u << (23 - i))) != 0;
-    symbols[i].level0 = 1;
-    symbols[i].duration0 = one ? 9 : 3;
-    symbols[i].level1 = 0;
-    symbols[i].duration1 = one ? 3 : 9;
-  }
-  symbols[24].duration0 = 500;
-  symbols[24].duration1 = 500;
-  rmt_transmit_config_t config{};
-  // Release the RMT power lock between color changes; WS2812 retains its state.
-  if (rmt_enable(channel) == ESP_OK) {
-    if (rmt_transmit(channel, encoder, symbols, sizeof symbols, &config) ==
-        ESP_OK)
-      rmt_tx_wait_all_done(channel, -1);
-    rmt_disable(channel);
+  for (unsigned board = 0; board < 2; ++board) {
+    const uint32_t wire = board == 0 ? rgb
+        : ((rgb & 0x00ff00u) << 8) | ((rgb & 0xff0000u) >> 8) |
+              (rgb & 0x0000ffu);
+    for (unsigned i = 0; i < 24; ++i) {
+      const bool one = (wire & (1u << (23 - i))) != 0;
+      symbols[i].level0 = 1;
+      symbols[i].duration0 = one ? 9 : 3;
+      symbols[i].level1 = 0;
+      symbols[i].duration1 = one ? 3 : 9;
+    }
+    // 300 us reset also accommodates WS2812 revisions requiring >280 us.
+    symbols[24].duration0 = 1500;
+    symbols[24].duration1 = 1500;
+    rmt_transmit_config_t config{};
+    // SuperMini's discrete red LED shares GPIO48 (active high). Keep it off
+    // between frames; it cannot be controlled independently during RGB data.
+    config.flags.eot_level = 0;
+    auto channel = channels[board];
+    // Release the power lock between changes; WS2812 retains its state.
+    if (rmt_enable(channel) == ESP_OK) {
+      if (rmt_transmit(channel, encoder, symbols, sizeof symbols, &config) ==
+          ESP_OK)
+        rmt_tx_wait_all_done(channel, -1);
+      rmt_disable(channel);
+    }
   }
   uint8_t r = rgb >> 16, g = rgb >> 8, b = rgb;
   bool yellow = r && g && b < r / 2 && b < g / 2;
@@ -92,15 +105,18 @@ void buddy_led_init(void) {
   gpio.mode = GPIO_MODE_OUTPUT;
   LED_INIT(3, gpio_config(&gpio));
   rmt_tx_channel_config_t config{};
-  config.gpio_num = GPIO_NUM_21;
   config.clk_src = RMT_CLK_SRC_DEFAULT;
   config.resolution_hz = 10000000;
   config.mem_block_symbols = 64;
   config.trans_queue_depth = 1;
-  LED_INIT(4, rmt_new_tx_channel(&config, &channel));
+  for (unsigned board = 0; board < 2; ++board) {
+    config.gpio_num = rgb_pins[board];
+    LED_INIT(4, rmt_new_tx_channel(&config, &channels[board]));
+  }
   rmt_copy_encoder_config_t copy{};
   LED_INIT(5, rmt_new_copy_encoder(&copy, &encoder));
   vibeled::init({load, save});
+  output(0); // Clear both onboard RGB LEDs before accepting USB commands.
   LED_INIT(6, xTaskCreatePinnedToCore(run, "vibeled", 4096, nullptr, 2, &worker,
                                       1) == pdPASS
                   ? ESP_OK

@@ -82,7 +82,18 @@ Qt 界面包含颜色选择、交替色、亮灭时间、总时长、level、快
 
 ## 灯效规则
 
-GPIO 21 驱动一个 RGB 灯，GPIO 7/8/9 分别驱动离散绿/黄/红灯，沿用旧项目的硬件和 RGB 字节顺序。颜色名称支持 `black white red green blue yellow cyan magenta orange purple` 或 6 位十六进制。
+从固件 `0.13.1` 起，同一份固件同时向两种板子的板载 RGB 灯输出相同颜色，无需切换板型：
+
+| 板子 | RGB 数据引脚 | 线上颜色顺序 |
+| --- | --- | --- |
+| Waveshare ESP32-S3-Zero | GPIO21 | RGB |
+| ESP32-S3 SuperMini（GPIO48 版） | GPIO48 | GRB |
+
+两种板子都保留 GPIO21、GPIO48 用于灯光，不应再接其他外设。Flash/PSRAM 构建配置仍按实际容量选择；4 MB Flash、2 MB Quad PSRAM 使用 `q2-f4`。GPIO 7/8/9 继续驱动旧硬件的外接绿/黄/红灯，它们不是 SuperMini 的板载红、蓝灯。颜色名称支持 `black white red green blue yellow cyan magenta orange purple` 或 6 位十六进制。
+
+启动时清空两个 RGB 输出；仅在颜色改变时发送一次数据，发送后保持低电平，不进行周期刷新。按 [SuperMini 原理图](https://fomenko.kyiv.ua/wp-content/uploads/2026/03/007217_ESP32-S3_Supermini_schematic-1555x1080.png)，独立红灯与 RGB 数据共用 GPIO48、高电平点亮，因此固件运行后不再常亮，但 RGB 更新期间的极短脉冲无法独立消除。上电至固件初始化前的灯态不由此驱动控制。
+
+该版 SuperMini 的蓝灯由 TP4054 的充电状态引脚直接驱动，没有连接 ESP32 GPIO，固件无法关闭它或阻止无电池时可能出现的闪烁。要彻底熄灭只能遮光或修改硬件（例如拆除蓝灯或其串联电阻），软件不能替代。其他同名板子需要核对接线。Zero 的 GPIO 和颜色顺序参见[微雪示例](https://docs.waveshare.com/ESP32-ESP-IDF-Tutorials/Rmt-Drive-Ws2812)及[官方 FAQ](https://docs.waveshare.net/ESP32-S3-Zero/FAQ/)，SuperMini 的 GRB 顺序参见 [ESPHome 板卡配置](https://devices.esphome.io/devices/tenstar-robot-esp32-s3-supermini/)。
 
 `on-ms` 默认 1000，必须大于 0；`off-ms` 默认 0（常亮）；`duration-ms` 默认 0（无限）；`altcolor` 默认黑色；level 默认 3，范围 1–5。时间参数接受无符号 32 位整数。
 

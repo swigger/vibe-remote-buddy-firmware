@@ -32,10 +32,10 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 5.4.0
+    version: 6.1.0
 direct_dependencies:
 - espressif/esp_tinyusb
 - idf
 manifest_hash: 92ea502296fefe74d6c0c72fdeaf54b4908e8c0257c2f9edbbbc1669fcfec904
 target: esp32s3
-version: 2.0.0
+version: 3.0.0

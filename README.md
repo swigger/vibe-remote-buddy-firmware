@@ -6,6 +6,8 @@ ESP32-S3 接收器固件：板子负责蓝牙连接、遥控器按键与语音�
 
 ## USB 状态灯（vibeled）
 
+`0.13.1` 同时支持 ESP32-S3-Zero（GPIO21、RGB）和 GPIO48 版 SuperMini（GRB）的板载彩灯。SuperMini 独立红灯在数据发送间隙保持熄灭；蓝色充电灯不受 ESP32 控制，硬件限制及引脚占用见 [vibeled 使用说明](docs/vibeled.md#灯效规则)。
+
 `0.13.0` 合并原 `logled` 的五级灯效、双色闪烁、定时恢复和持久化快捷灯效。新的 C++ / Qt 工具 **vibeled** 支持 Windows/macOS，灯光使用接收器现有的 **USB CDC** 管理通道；原命令行参数和 Agent Python 的 `--agent NAME EVENT` 语法保留。无参数启动图形界面，带参数执行命令。构建、兼容性及 Hook 配置见 [vibeled 使用说明](docs/vibeled.md)。
 
 ```powershell
