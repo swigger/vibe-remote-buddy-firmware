@@ -19,7 +19,8 @@ if(APPLE)
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.vibeled.app"
         MACOSX_BUNDLE_BUNDLE_NAME "vibeled"
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION})
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+        INSTALL_RPATH "@executable_path/../Frameworks")
     target_link_libraries(vibeled PRIVATE "-framework Carbon")
 elseif(WIN32)
     enable_language(RC)
